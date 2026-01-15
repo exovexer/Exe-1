@@ -56,7 +56,7 @@ FIREBASE_EMAIL = "uploader@eposta.com"
 FIREBASE_PASSWORD = "A9@xF3!qW6"
 FIREBASE_BUCKET = "mesaitakip-4d2d8.firebasestorage.app"
 
-UPLOAD_DEBOUNCE_SECONDS = 120
+UPLOAD_DEBOUNCE_SECONDS = 10
 _debounce_lock = threading.Lock()
 _debounce_timers = {}
 _pending_upload_paths = {}
