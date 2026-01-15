@@ -5,6 +5,8 @@ import json
 import threading
 import socket
 import queue
+import urllib.parse
+import urllib.request
 from datetime import datetime, date, timedelta
 
 import tkinter as tk
@@ -48,6 +50,106 @@ KISILER_FIELDNAMES = [
     "Kayıt Tarihi",
     "Senkronize"
 ]
+
+FIREBASE_API_KEY = "AIzaSyDBxfIpSQbZ93tIvrnf6xB2b4OQMtzrWVI"
+FIREBASE_EMAIL = "uploader@eposta.com"
+FIREBASE_PASSWORD = "A9@xF3!qW6"
+FIREBASE_BUCKET = "mesaitakip-4d2d8.firebasestorage.app"
+
+UPLOAD_DEBOUNCE_SECONDS = 120
+_debounce_lock = threading.Lock()
+_debounce_timers = {}
+_pending_upload_paths = {}
+
+
+def _firebase_login():
+    payload = json.dumps({
+        "email": FIREBASE_EMAIL,
+        "password": FIREBASE_PASSWORD,
+        "returnSecureToken": True
+    }).encode("utf-8")
+    url = (
+        "https://identitytoolkit.googleapis.com/v1/accounts:"
+        f"signInWithPassword?key={FIREBASE_API_KEY}"
+    )
+    request = urllib.request.Request(
+        url,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
+    with urllib.request.urlopen(request, timeout=20) as response:
+        data = json.loads(response.read().decode("utf-8"))
+    return data.get("idToken")
+
+
+def _firebase_upload(local_path: str, remote_name: str, token: str):
+    if not os.path.exists(local_path):
+        return
+    with open(local_path, "rb") as f:
+        body = f.read()
+    encoded_name = urllib.parse.quote(remote_name, safe="")
+    url = (
+        "https://firebasestorage.googleapis.com/v0/b/"
+        f"{FIREBASE_BUCKET}/o?uploadType=media&name={encoded_name}"
+    )
+    request = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "text/csv"
+        },
+        method="POST"
+    )
+    with urllib.request.urlopen(request, timeout=30):
+        pass
+
+
+def _upload_with_login(local_path: str, remote_name: str):
+    token = None
+    try:
+        token = _firebase_login()
+        if not token:
+            return
+        _firebase_upload(local_path, remote_name, token)
+    except Exception:
+        pass
+    finally:
+        token = None
+
+
+def _start_upload_thread(local_path: str, remote_name: str):
+    thread = threading.Thread(
+        target=_upload_with_login,
+        args=(local_path, remote_name),
+        daemon=True
+    )
+    thread.start()
+
+
+def _debounce_fire(kind: str):
+    with _debounce_lock:
+        local_path = _pending_upload_paths.get(kind)
+    if not local_path:
+        return
+    if kind == "KISILER":
+        remote_name = "logs/Kisiler.csv"
+    else:
+        remote_name = f"logs/{os.path.basename(local_path)}"
+    _start_upload_thread(local_path, remote_name)
+
+
+def on_csv_written(kind: str, local_path: str):
+    with _debounce_lock:
+        existing = _debounce_timers.get(kind)
+        if existing:
+            existing.cancel()
+        _pending_upload_paths[kind] = local_path
+        timer = threading.Timer(UPLOAD_DEBOUNCE_SECONDS, _debounce_fire, args=(kind,))
+        timer.daemon = True
+        _debounce_timers[kind] = timer
+        timer.start()
 
 def load_settings():
     if not os.path.exists(SETTINGS_PATH):
@@ -262,6 +364,7 @@ def save_kisiler_rows(rows):
         writer.writeheader()
         for r in rows:
             writer.writerow(normalize_kisi_row(r))
+    on_csv_written("KISILER", KISILER_PATH)
 
 
 # ---------- DUPLICATE CHECK ----------
@@ -477,6 +580,7 @@ def add_log_and_update(ad_soyad: str, card_id: str, dt: datetime,
             kaynak,
             "0"
         ])
+    on_csv_written("MONTH", log_path)
 
     reload_today_table()
 
