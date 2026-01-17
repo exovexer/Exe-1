@@ -7,6 +7,7 @@ import socket
 import queue
 import urllib.parse
 import urllib.request
+import locale
 from datetime import datetime, date, timedelta
 
 import tkinter as tk
@@ -1800,7 +1801,8 @@ def on_close_window():
 
 def configure_tk_turkish_support(app: tk.Tk):
     try:
-        app.tk.call("encoding", "system", "utf-8")
+        preferred_encoding = locale.getpreferredencoding(False) or "utf-8"
+        app.tk.call("encoding", "system", preferred_encoding)
     except tk.TclError:
         pass
 
