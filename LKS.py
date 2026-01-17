@@ -1,6 +1,5 @@
 import os
 import sys
-import ctypes
 import csv
 import json
 import threading
@@ -8,7 +7,6 @@ import socket
 import queue
 import urllib.parse
 import urllib.request
-import locale
 from datetime import datetime, date, timedelta
 
 import tkinter as tk
@@ -1802,23 +1800,7 @@ def on_close_window():
 
 def configure_tk_turkish_support(app: tk.Tk):
     try:
-        try:
-            locale.setlocale(locale.LC_CTYPE, "")
-        except locale.Error:
-            pass
-        preferred_encoding = locale.getpreferredencoding(False) or "utf-8"
-        if sys.platform.startswith("win"):
-            locale_name = (locale.getdefaultlocale()[0] or "").lower()
-            if "tr" in locale_name:
-                preferred_encoding = "cp1254"
-            else:
-                try:
-                    ansi_codepage = ctypes.windll.kernel32.GetACP()
-                    if ansi_codepage == 1254:
-                        preferred_encoding = "cp1254"
-                except Exception:
-                    pass
-        app.tk.call("encoding", "system", preferred_encoding)
+        app.tk.call("encoding", "system", "utf-8")
     except tk.TclError:
         pass
 
