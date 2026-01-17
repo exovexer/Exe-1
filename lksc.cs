@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 
 namespace LksWrapper
 {
@@ -8,6 +9,9 @@ namespace LksWrapper
     {
         private static int Main(string[] args)
         {
+            Console.OutputEncoding = Encoding.UTF8;
+            Console.InputEncoding = Encoding.UTF8;
+
             var baseDir = AppContext.BaseDirectory;
             var pythonScript = Path.Combine(baseDir, "LKS.py");
 
@@ -31,9 +35,12 @@ namespace LksWrapper
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8,
                 CreateNoWindow = false,
                 WorkingDirectory = baseDir
             };
+            startInfo.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8";
 
             using var process = new Process { StartInfo = startInfo };
             process.OutputDataReceived += (_, e) =>
