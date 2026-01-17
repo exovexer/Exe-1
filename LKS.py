@@ -630,6 +630,27 @@ TURKISH_KEYBOARD_FIX_MAP = {
 def normalize_turkish_keyboard_char(ch: str) -> str:
     return TURKISH_KEYBOARD_FIX_MAP.get(ch, ch)
 
+def normalize_turkish_keyboard_text(text: str) -> str:
+    return "".join(normalize_turkish_keyboard_char(ch) for ch in text)
+
+def bind_turkish_keyboard_normalization(entry: tk.Entry) -> None:
+    def _on_key_release(event):
+        widget = event.widget
+        try:
+            current = widget.get()
+        except Exception:
+            return
+        normalized = normalize_turkish_keyboard_text(current)
+        if normalized == current:
+            return
+        cursor_pos = widget.index(tk.INSERT)
+        widget.delete(0, tk.END)
+        widget.insert(0, normalized)
+        if cursor_pos <= len(normalized):
+            widget.icursor(cursor_pos)
+
+    entry.bind("<KeyRelease>", _on_key_release, add=True)
+
 
 def keyboard_event(e):
     global _buffer
@@ -840,6 +861,7 @@ def open_new_card_window():
     tk.Label(win, text="Ad Soyad:", bg="#222222", fg="white").grid(row=1, column=0, sticky="e", padx=5, pady=5)
     entry_name = tk.Entry(win, width=30)
     entry_name.grid(row=1, column=1, padx=5, pady=5)
+    bind_turkish_keyboard_normalization(entry_name)
 
     tk.Label(win, text="TC Numarası:", bg="#222222", fg="white").grid(row=2, column=0, sticky="e", padx=5, pady=5)
     entry_tc = tk.Entry(win, width=30)
@@ -1402,6 +1424,12 @@ def open_personel_new_window():
     e_gorev = tk.Entry(frm, font=("Segoe UI", 11))
     e_not = tk.Entry(frm, font=("Segoe UI", 11))
 
+    bind_turkish_keyboard_normalization(e_name)
+    bind_turkish_keyboard_normalization(e_adres)
+    bind_turkish_keyboard_normalization(e_acil_ad)
+    bind_turkish_keyboard_normalization(e_gorev)
+    bind_turkish_keyboard_normalization(e_not)
+
     add_row(0, "Kart Numarası", e_card)
     add_row(1, "Ad Soyad", e_name)
     add_row(2, "TC Numarası", e_tc)
@@ -1558,6 +1586,12 @@ def open_personel_edit_form(row_data: dict, is_active: bool):
     e_acil_no = tk.Entry(frm, font=("Segoe UI", 11)); e_acil_no.insert(0, row_data.get("Acil Durum Numarası","0"))
     e_gorev = tk.Entry(frm, font=("Segoe UI", 11)); e_gorev.insert(0, row_data.get("Görev / Pozisyon","0"))
     e_not = tk.Entry(frm, font=("Segoe UI", 11)); e_not.insert(0, row_data.get("Notlar","0"))
+
+    bind_turkish_keyboard_normalization(e_name)
+    bind_turkish_keyboard_normalization(e_adres)
+    bind_turkish_keyboard_normalization(e_acil_ad)
+    bind_turkish_keyboard_normalization(e_gorev)
+    bind_turkish_keyboard_normalization(e_not)
 
     add_row(0, "Kart Numarası", e_card, disabled=True)
     add_row(1, "Ad Soyad", e_name)
