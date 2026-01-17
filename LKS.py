@@ -217,11 +217,22 @@ def restart_app():
         except Exception:
             pass
 
+def fix_turkish_mojibake(text: str) -> str:
+    mapping = {
+        "þ": "ş",
+        "Þ": "Ş",
+        "ý": "ı",
+        "Ý": "İ",
+        "Ð": "Ğ",
+        "ð": "ğ",
+    }
+    return "".join(mapping.get(ch, ch) for ch in text)
+
 def normalize_kisi_row(row: dict) -> dict:
     out = {k: "0" for k in KISILER_FIELDNAMES}
     for k in KISILER_FIELDNAMES:
         if k in row and row.get(k) not in (None, ""):
-            out[k] = str(row.get(k))
+            out[k] = fix_turkish_mojibake(str(row.get(k)))
     # defaults
     if out["Senkronize"] in (None, ""):
         out["Senkronize"] = "0"
@@ -617,18 +628,8 @@ def process_card_from_queue():
 
 # ---------- KEYBOARD / RFID LISTENER ----------
 
-TURKISH_KEYBOARD_FIX_MAP = {
-    "þ": "ş",
-    "Þ": "Ş",
-    "ý": "ı",
-    "Ý": "İ",
-    "Ð": "Ğ",
-    "ð": "ğ",
-}
-
-
 def normalize_turkish_keyboard_char(ch: str) -> str:
-    return TURKISH_KEYBOARD_FIX_MAP.get(ch, ch)
+    return fix_turkish_mojibake(ch)
 
 def normalize_turkish_keyboard_text(text: str) -> str:
     return "".join(normalize_turkish_keyboard_char(ch) for ch in text)
