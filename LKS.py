@@ -1,5 +1,6 @@
 import os
 import sys
+import ctypes
 import csv
 import json
 import threading
@@ -1807,9 +1808,22 @@ def configure_tk_turkish_support(app: tk.Tk):
             pass
         preferred_encoding = locale.getpreferredencoding(False) or "utf-8"
         if sys.platform.startswith("win"):
+            turkish_keyboard = False
+            try:
+                lang_id = ctypes.windll.user32.GetKeyboardLayout(0) & 0xFFFF
+                turkish_keyboard = lang_id == 0x041F
+            except Exception:
+                turkish_keyboard = False
             locale_name = (locale.getdefaultlocale()[0] or "").lower()
-            if "tr" in locale_name and preferred_encoding.lower() in ("cp1252", "latin-1", "iso-8859-1"):
+            if turkish_keyboard or "tr" in locale_name:
                 preferred_encoding = "cp1254"
+            else:
+                try:
+                    ansi_codepage = ctypes.windll.kernel32.GetACP()
+                    if ansi_codepage == 1254:
+                        preferred_encoding = "cp1254"
+                except Exception:
+                    pass
         app.tk.call("encoding", "system", preferred_encoding)
     except tk.TclError:
         pass
