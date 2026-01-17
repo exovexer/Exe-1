@@ -11,6 +11,7 @@ from datetime import datetime, date, timedelta
 
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
+from tkinter import font as tkfont
 
 import keyboard  # global hotkey + RFID/klavye
 import pystray
@@ -1797,6 +1798,31 @@ def on_close_window():
     root.withdraw()
 
 
+def configure_tk_turkish_support(app: tk.Tk):
+    try:
+        app.tk.call("encoding", "system", "utf-8")
+    except tk.TclError:
+        pass
+
+    default_family = "Segoe UI"
+    app.option_add("*Font", (default_family, 10))
+    for font_name in (
+        "TkDefaultFont",
+        "TkTextFont",
+        "TkFixedFont",
+        "TkMenuFont",
+        "TkHeadingFont",
+        "TkCaptionFont",
+        "TkSmallCaptionFont",
+        "TkIconFont",
+        "TkTooltipFont",
+    ):
+        try:
+            tkfont.nametofont(font_name).configure(family=default_family)
+        except tk.TclError:
+            pass
+
+
 def build_main_window():
     global root, header_label, date_label, tree, total_label
     global _btn_new, _btn_manual, _btn_report, _btn_personel, _btn_ayarlar, _btn_back, _btn_yonetim
@@ -1905,6 +1931,7 @@ def main():
     load_kisiler()
 
     root = tk.Tk()
+    configure_tk_turkish_support(root)
     build_main_window()
 
     # Tray sadece bir kez başlasın
