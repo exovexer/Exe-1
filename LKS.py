@@ -1580,7 +1580,7 @@ def open_personel_edit_form(row_data: dict, is_active: bool):
     cb_durum = ttk.Combobox(frm, textvariable=durum_var, values=DURUM_SECENEKLERI, state="readonly", font=("Segoe UI", 11))
 
     e_adres = tk.Entry(frm, font=("Segoe UI", 11)); e_adres.insert(0, row_data.get("Adres","0"))
-    kan_var = tk.StringVar(value="Bilinmiyor")
+    kan_var = tk.StringVar(value="0")
     cb_kan = ttk.Combobox(frm, textvariable=kan_var, values=KAN_GRUPLARI, state="readonly", font=("Segoe UI", 11))
     e_acil_ad = tk.Entry(frm, font=("Segoe UI", 11)); e_acil_ad.insert(0, row_data.get("Acil Durum Kişi Adı","0"))
     e_acil_no = tk.Entry(frm, font=("Segoe UI", 11)); e_acil_no.insert(0, row_data.get("Acil Durum Numarası","0"))
@@ -2015,4 +2015,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
