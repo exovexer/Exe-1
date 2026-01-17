@@ -617,6 +617,20 @@ def process_card_from_queue():
 
 # ---------- KEYBOARD / RFID LISTENER ----------
 
+TURKISH_KEYBOARD_FIX_MAP = {
+    "þ": "ş",
+    "Þ": "Ş",
+    "ý": "ı",
+    "Ý": "İ",
+    "Ð": "Ğ",
+    "ð": "ğ",
+}
+
+
+def normalize_turkish_keyboard_char(ch: str) -> str:
+    return TURKISH_KEYBOARD_FIX_MAP.get(ch, ch)
+
+
 def keyboard_event(e):
     global _buffer
     if e.event_type != "down":
@@ -628,7 +642,7 @@ def keyboard_event(e):
         if card_id:
             card_queue.put(("RFID", card_id))
     elif len(name) == 1:
-        _buffer.append(name)
+        _buffer.append(normalize_turkish_keyboard_char(name))
 
 
 def start_keyboard_listener():
@@ -1802,12 +1816,10 @@ def on_close_window():
 def configure_tk_turkish_support(app: tk.Tk):
     preferred_encoding = locale.getpreferredencoding(False)
     encodings = []
-    if sys.platform.startswith("win") and preferred_encoding.lower() in ("cp1252", "windows-1252"):
+    if sys.platform.startswith("win"):
         encodings.append("cp1254")
     if preferred_encoding:
         encodings.append(preferred_encoding)
-    if sys.platform.startswith("win"):
-        encodings.append("cp1254")
     encodings.append("utf-8")
 
     for encoding in encodings:
