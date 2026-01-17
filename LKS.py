@@ -1,5 +1,6 @@
 import os
 import sys
+import locale
 import csv
 import json
 import threading
@@ -1799,10 +1800,22 @@ def on_close_window():
 
 
 def configure_tk_turkish_support(app: tk.Tk):
-    try:
-        app.tk.call("encoding", "system", "utf-8")
-    except tk.TclError:
-        pass
+    preferred_encoding = locale.getpreferredencoding(False)
+    encodings = []
+    if sys.platform.startswith("win") and preferred_encoding.lower() in ("cp1252", "windows-1252"):
+        encodings.append("cp1254")
+    if preferred_encoding:
+        encodings.append(preferred_encoding)
+    if sys.platform.startswith("win"):
+        encodings.append("cp1254")
+    encodings.append("utf-8")
+
+    for encoding in encodings:
+        try:
+            app.tk.call("encoding", "system", encoding)
+            break
+        except tk.TclError:
+            continue
 
     default_family = "Segoe UI"
     app.option_add("*Font", (default_family, 10))
