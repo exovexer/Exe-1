@@ -1801,7 +1801,15 @@ def on_close_window():
 
 def configure_tk_turkish_support(app: tk.Tk):
     try:
+        try:
+            locale.setlocale(locale.LC_CTYPE, "")
+        except locale.Error:
+            pass
         preferred_encoding = locale.getpreferredencoding(False) or "utf-8"
+        if sys.platform.startswith("win"):
+            locale_name = (locale.getdefaultlocale()[0] or "").lower()
+            if "tr" in locale_name and preferred_encoding.lower() in ("cp1252", "latin-1", "iso-8859-1"):
+                preferred_encoding = "cp1254"
         app.tk.call("encoding", "system", preferred_encoding)
     except tk.TclError:
         pass
