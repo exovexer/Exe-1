@@ -34,6 +34,8 @@ else:
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
 KISILER_PATH = os.path.join(LOGS_DIR, "Kisiler.csv")
 SETTINGS_PATH = os.path.join(BASE_DIR, "settings.json")
+CSV_READ_ENCODINGS = ("utf-8-sig", "cp1254")
+CSV_WRITE_ENCODING = "utf-8-sig"
 
 KISILER_FIELDNAMES = [
     "Kart Numarası",
@@ -253,9 +255,23 @@ def ensure_directories_and_files():
         os.makedirs(LOGS_DIR, exist_ok=True)
 
     if not os.path.exists(KISILER_PATH):
-        with open(KISILER_PATH, "w", encoding="utf-8", newline="") as f:
+        with open(KISILER_PATH, "w", encoding=CSV_WRITE_ENCODING, newline="") as f:
             writer = csv.writer(f)
             writer.writerow(KISILER_FIELDNAMES)
+
+
+def open_csv_reader(path: str):
+    for encoding in CSV_READ_ENCODINGS:
+        f = None
+        try:
+            f = open(path, "r", encoding=encoding, newline="")
+            f.read(1)
+            f.seek(0)
+            return f
+        except UnicodeDecodeError:
+            if f is not None:
+                f.close()
+    return open(path, "r", encoding=CSV_READ_ENCODINGS[0], newline="", errors="replace")
 
 def turkish_month_name(m):
     months = [
@@ -283,7 +299,7 @@ def get_month_log_path(d: date) -> str:
 
 def ensure_month_log_header(path: str):
     if not os.path.exists(path):
-        with open(path, "w", encoding="utf-8", newline="") as f:
+        with open(path, "w", encoding=CSV_WRITE_ENCODING, newline="") as f:
             writer = csv.writer(f)
             writer.writerow([
                 "Tarih",
@@ -349,7 +365,7 @@ def load_kisiler():
     active_cards = {}
     if not os.path.exists(KISILER_PATH):
         return
-    with open(KISILER_PATH, "r", encoding="utf-8", newline="") as f:
+    with open_csv_reader(KISILER_PATH) as f:
         reader = csv.DictReader(f)
         for row in reader:
             row_n = normalize_kisi_row(row)
@@ -360,7 +376,7 @@ def load_kisiler():
 
 
 def save_kisiler_rows(rows):
-    with open(KISILER_PATH, "w", encoding="utf-8", newline="") as f:
+    with open(KISILER_PATH, "w", encoding=CSV_WRITE_ENCODING, newline="") as f:
         writer = csv.DictWriter(f, fieldnames=KISILER_FIELDNAMES)
         writer.writeheader()
         for r in rows:
@@ -375,7 +391,7 @@ def find_last_log_dt(ad_soyad: str, card_id: str, target_month_date: date):
     if not os.path.exists(log_path):
         return None
     last_dt = None
-    with open(log_path, "r", encoding="utf-8", newline="") as f:
+    with open_csv_reader(log_path) as f:
         reader = csv.DictReader(f)
         for row in reader:
             if row.get("Ad Soyad") != ad_soyad:
@@ -428,7 +444,7 @@ def reload_today_table():
     today = current_ui_date
     log_path = get_month_log_path(today)
     if os.path.exists(log_path):
-        with open(log_path, "r", encoding="utf-8", newline="") as f:
+        with open_csv_reader(log_path) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 try:
@@ -571,7 +587,7 @@ def add_log_and_update(ad_soyad: str, card_id: str, dt: datetime,
 
     log_path = get_month_log_path(dt.date())
     ensure_month_log_header(log_path)
-    with open(log_path, "a", encoding="utf-8", newline="") as f:
+    with open(log_path, "a", encoding=CSV_WRITE_ENCODING, newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
             dt.date().strftime("%Y-%m-%d"),
@@ -787,7 +803,7 @@ def open_new_card_window():
 
         rows = []
         if os.path.exists(KISILER_PATH):
-            with open(KISILER_PATH, "r", encoding="utf-8", newline="") as f:
+            with open_csv_reader(KISILER_PATH) as f:
                 reader = csv.DictReader(f)
                 for r in reader:
                     rows.append(r)
@@ -955,7 +971,7 @@ def generate_report(for_current_month: bool):
         return
 
     logs = []
-    with open(log_path, "r", encoding="utf-8", newline="") as f:
+    with open_csv_reader(log_path) as f:
         reader = csv.DictReader(f)
         for row in reader:
             try:
@@ -1325,7 +1341,7 @@ def read_all_kisiler_rows():
     rows = []
     if not os.path.exists(KISILER_PATH):
         return rows
-    with open(KISILER_PATH, "r", encoding="utf-8", newline="") as f:
+    with open_csv_reader(KISILER_PATH) as f:
         reader = csv.DictReader(f)
         for r in reader:
             rows.append(normalize_kisi_row(r))
